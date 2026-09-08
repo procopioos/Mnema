@@ -1,0 +1,9 @@
+node_modules
+.next
+out
+*.tsbuildinfo
+Dockerfile
+.dockerignore
+AGENTS.md
+CLAUDE.md
+README.md

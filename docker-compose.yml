@@ -1,0 +1,100 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ${COMPOSE_PROJECT_NAME:-mnema}-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mnema}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mnema}
+      POSTGRES_DB: ${POSTGRES_DB:-mnema}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mnema} -d ${POSTGRES_DB:-mnema}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: ${COMPOSE_PROJECT_NAME:-mnema}-redis
+    restart: unless-stopped
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: ./backend
+    container_name: ${COMPOSE_PROJECT_NAME:-mnema}-api
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-mnema}:${POSTGRES_PASSWORD:-mnema}@postgres:5432/${POSTGRES_DB:-mnema}
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: ${SECRET_KEY:-change-me}
+      STORAGE_DIR: ${STORAGE_DIR:-data}
+      MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-50}
+      CHUNK_SIZE: ${CHUNK_SIZE:-800}
+      CHUNK_OVERLAP: ${CHUNK_OVERLAP:-120}
+      ARQ_QUEUE_NAME: ${ARQ_QUEUE_NAME:-mnema}
+      MAX_DOCUMENTS_PER_WORKSPACE: ${MAX_DOCUMENTS_PER_WORKSPACE:-100}
+      MAX_STORAGE_BYTES_PER_WORKSPACE: ${MAX_STORAGE_BYTES_PER_WORKSPACE:-1073741824}
+    volumes:
+      - storage_data:/app/data
+    ports:
+      - "${API_PORT:-8000}:8000"
+
+  worker:
+    build:
+      context: ./backend
+    container_name: ${COMPOSE_PROJECT_NAME:-mnema}-worker
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-mnema}:${POSTGRES_PASSWORD:-mnema}@postgres:5432/${POSTGRES_DB:-mnema}
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: ${SECRET_KEY:-change-me}
+      STORAGE_DIR: ${STORAGE_DIR:-data}
+      MAX_UPLOAD_SIZE_MB: ${MAX_UPLOAD_SIZE_MB:-50}
+      CHUNK_SIZE: ${CHUNK_SIZE:-800}
+      CHUNK_OVERLAP: ${CHUNK_OVERLAP:-120}
+      ARQ_QUEUE_NAME: ${ARQ_QUEUE_NAME:-mnema}
+      MAX_DOCUMENTS_PER_WORKSPACE: ${MAX_DOCUMENTS_PER_WORKSPACE:-100}
+      MAX_STORAGE_BYTES_PER_WORKSPACE: ${MAX_STORAGE_BYTES_PER_WORKSPACE:-1073741824}
+    volumes:
+      - storage_data:/app/data
+    command: ["uv", "run", "arq", "app.workers.worker.WorkerSettings"]
+
+  web:
+    build:
+      context: ./frontend
+    container_name: ${COMPOSE_PROJECT_NAME:-mnema}-web
+    restart: unless-stopped
+    depends_on:
+      - api
+    environment:
+      API_PROXY: http://api:8000
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+
+volumes:
+  postgres_data:
+  redis_data:
+  storage_data:

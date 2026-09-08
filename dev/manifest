@@ -1,0 +1,25 @@
+# Files dev/setup.sh requires inside the project checkout.
+# One relative path per line; directories end in "/". Blank lines and lines
+# starting with "#" are ignored. setup.sh aborts listing the first missing one.
+
+docker-compose.yml
+.env.example
+
+backend/Dockerfile
+backend/.dockerignore
+backend/pyproject.toml
+backend/uv.lock
+backend/alembic.ini
+backend/alembic/
+backend/app/
+backend/scripts/docker-entrypoint.sh
+backend/scripts/seed_demo.py
+
+frontend/Dockerfile
+frontend/.dockerignore
+frontend/next.config.ts
+frontend/package.json
+frontend/package-lock.json
+frontend/lib/api/generated.d.ts
+frontend/app/
+frontend/components/

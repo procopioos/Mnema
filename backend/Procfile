@@ -1,0 +1,2 @@
+api: uv run uvicorn app.main:app --reload
+worker: uv run arq app.workers.worker.WorkerSettings
