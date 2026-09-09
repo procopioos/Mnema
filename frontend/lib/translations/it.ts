@@ -83,6 +83,18 @@ export const it: { [K in TranslationKey]: string } = {
   "register.alreadyHaveAccount": "Hai già un account?",
   "register.failed": "Registrazione non riuscita",
 
+  "setup.welcomeTitle": "Benvenuto su Mnema",
+  "setup.description": "Crea l'account amministratore per iniziare.",
+  "setup.fullName": "Nome completo",
+  "setup.email": "Email",
+  "setup.password": "Password",
+  "setup.confirmPassword": "Conferma password",
+  "setup.passwordMismatch": "Le password non coincidono",
+  "setup.creating": "Creo l'account amministratore…",
+  "setup.createAccount": "Crea account amministratore",
+  "setup.failed": "Impossibile creare l'account amministratore",
+  "setup.notRequiredRedirect": "Questa istanza di Mnema è già configurata. Reindirizzamento…",
+
   "dashboard.title": "Dashboard",
   "dashboard.description": "Il tuo spazio di lavoro a colpo d'occhio.",
   "dashboard.recentDocuments": "Documenti recenti",

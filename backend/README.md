@@ -63,16 +63,24 @@ cd backend && uv run ruff check .
 uv run ruff format .
 ```
 
-## Demo data
+## First run
 
-Seed an "Acme Consulting" workspace with users, folders, tags and ready documents (root admin owner + admin/manager/employee members, all with password `Acme!demo2026`):
+The app boots with an empty database. `GET /api/v1/setup` returns
+`{"required": true}` while no user exists; the web UI uses it to route the
+first visitor to `/setup`. The **first registered user** becomes the root
+system admin (`is_root` + `is_system_admin`) and gets an owner's personal
+workspace. After an admin reset the flow repeats.
+
+## Demo data (opt-in, dev only)
+
+Seed an "Acme Consulting" workspace with users, folders, tags and ready documents (root admin owner + admin/manager/employee members, all with password `Acme!demo2026` — known and public, never use on a reachable deployment):
 
 ```bash
 cd backend
 uv run python -m scripts.seed_demo
 ```
 
-Re-running after success is a no-op (`--force` skips the exists-check). Requires migrated schema and Redis up (for the worker). The first registered user becomes the root system admin, so the seed also exercises the admin console.
+Re-running after success is a no-op (`--force` skips the exists-check). Requires migrated schema and Redis up (for the worker).
 
 ## Reset
 

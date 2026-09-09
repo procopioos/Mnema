@@ -74,7 +74,7 @@ Starts the API (`:8000`), Arq worker, and frontend (`:3000`).
 docker compose up -d --build
 ```
 
-Builds all three services (`api` → `:8000`, `worker`, `web` → `:3000`). The API runs Alembic migrations on start. Seed demo data with `docker compose exec api uv run python -m scripts.seed_demo`.
+Builds all three services (`api` → `:8000`, `worker`, `web` → `:3000`). The API runs Alembic migrations on start. The app starts empty — the first visitor is routed to `/setup` to create the administrator account. Demo data is opt-in: `docker compose exec api uv run python -m scripts.seed_demo`.
 
 ## Useful commands
 

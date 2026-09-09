@@ -158,6 +158,10 @@ export const auth = {
   me: () => request<UserOut>("/auth/me"),
 };
 
+export const setup = {
+  status: () => request<{ required: boolean }>("/setup"),
+};
+
 export const admin = {
   reset: () => request<void>("/admin/reset", { method: "POST" }),
   stats: () => request<AdminStatsOut>("/admin/stats"),

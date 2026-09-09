@@ -88,3 +88,6 @@ pgdata/
 # Documentation & Unrelated
 Documentation/
 Website/
+
+# Session transcripts
+session-*.md

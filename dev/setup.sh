@@ -2,7 +2,9 @@
 # Mnema dev bootstrap kit.
 #
 # Sets the whole project up from scratch: prerequisites -> fresh source ->
-# env -> Docker images -> containers -> migrations -> seed -> verification.
+# env -> Docker images -> containers -> migrations. The app starts EMPTY;
+# the first visitor creates the administrator account in the UI or via
+# --seed-demo (demo data, dev only).
 #
 # Subcommands:
 #   setup     (default) full bootstrap from a fresh source into TARGET
@@ -18,8 +20,9 @@
 #   --source URL|DIR repo to bootstrap from (default GitHub)
 #   --target DIR     target directory (default ~/mnema)
 #   --project NAME   compose project name for container/volume namespacing
-#   --branch BR      git branch for clone (default master)
-#   --skip-seed      don't load demo data
+#   --branch BR      git branch for clone (default: remote's default branch)
+#   --seed-demo      load the Acme Consulting demo data (dev only, known password!)
+#   --skip-seed      deprecated no-op: booting empty is the default now
 #   --skip-check     skip the prerequisite/daemon check
 #   --force          bypass safety prompts (used by destroy / non-empty target)
 #   --help
@@ -35,16 +38,15 @@ ENV_TEMPLATE="${KIT_DIR}/env.template"
 
 DEFAULT_SOURCE="https://github.com/procopioos/Mnema.git"
 DEFAULT_TARGET="${HOME}/mnema"
-DEFAULT_BRANCH="master"
 
 SOURCE="${DEFAULT_SOURCE}"
 TARGET=""
 PROJECT=""
-BRANCH="${DEFAULT_BRANCH}"
+BRANCH=""
 INSTALL=0
 NO_CLONE=0
 COPY=0
-SKIP_SEED=0
+SEED_DEMO=0
 SKIP_CHECK=0
 FORCE=0
 CMD="setup"
@@ -68,7 +70,8 @@ while [ $# -gt 0 ]; do
     --install) INSTALL=1 ;;
     --no-clone) NO_CLONE=1 ;;
     --copy) COPY=1 ;;
-    --skip-seed) SKIP_SEED=1 ;;
+    --seed-demo) SEED_DEMO=1 ;;
+    --skip-seed) warn "--skip-seed is the default now; use --seed-demo to load demo data" ;;
     --skip-check) SKIP_CHECK=1 ;;
     --force) FORCE=1 ;;
     --source) SOURCE="${2:?--source needs a value}"; shift ;;
@@ -190,8 +193,12 @@ prepare_target() {
   mkdir -p "$(dirname "${TARGET}")"
   case "${SOURCE}" in
     *://* | git@* ) # remote URL
-      log "Cloning ${SOURCE} (branch ${BRANCH}, depth 1) -> ${TARGET}"
-      git clone --depth 1 --branch "${BRANCH}" "${SOURCE}" "${TARGET}"
+      if [ -n "${BRANCH}" ]; then
+        log "Cloning ${SOURCE} (branch ${BRANCH}, depth 1) -> ${TARGET}"
+      else
+        log "Cloning ${SOURCE} (default branch, depth 1) -> ${TARGET}"
+      fi
+      git clone --depth 1 ${BRANCH:+--branch "${BRANCH}"} "${SOURCE}" "${TARGET}"
       ;;
     */) die "local --source path should not end with '/': ${SOURCE}" ;;
     *) # local path
@@ -208,7 +215,7 @@ prepare_target() {
           "${SOURCE}/" "${TARGET}/"
       else
         log "Cloning local checkout ${SOURCE} -> ${TARGET}"
-        git clone --depth 1 --branch "${BRANCH}" "${SOURCE}" "${TARGET}"
+        git clone --depth 1 ${BRANCH:+--branch "${BRANCH}"} "${SOURCE}" "${TARGET}"
       fi
       ;;
   esac
@@ -299,12 +306,24 @@ Mnema is up and running.
   Web UI:        http://localhost:${web}
   API docs:      http://localhost:${api}/docs
   Project:       ${PROJECT}  (compose project; dir: ${TARGET})
+EOF
+  if [ "${SEED_DEMO}" -eq 1 ]; then
+    cat <<EOF
 
 Demo accounts (password: Acme!demo2026):
   alex@acme.example   owner + root system admin
   casey@acme.example  admin
   mara@acme.example   manager
   sam@acme.example    employee
+EOF
+  else
+    cat <<EOF
+
+Fresh install: open http://localhost:${web} and create the administrator
+account. The first user to register becomes the root system admin.
+EOF
+  fi
+  cat <<EOF
 
 Manage:
   ${KIT_DIR}/setup.sh status    # health + status
@@ -327,8 +346,12 @@ cmd_setup() {
     warn "  cd ${TARGET} && docker compose logs api"
     exit 1
   }
-  if [ "${SKIP_SEED}" -eq 0 ]; then seed; fi
-  verify_demo
+  if [ "${SEED_DEMO}" -eq 1 ]; then
+    seed
+    verify_demo
+  else
+    log "Fresh install ready (no demo data): create the administrator account at http://localhost:${WEB_PORT:-3000}"
+  fi
   summary
 }
 

@@ -1,8 +1,13 @@
 # Mnema — dev bootstrap kit
 
 A self-contained kit to set the entire Mnema project up from nothing (Docker →
-build → run), seed demo data, and tear it down — even after Docker or other
-tooling has been uninstalled.
+build → run), create the first administrator, and tear it down — even after
+Docker or other tooling has been uninstalled.
+
+The app ships **empty**: no users, no workspaces, no documents. The first
+person to open the web UI walks through a `/setup` wizard that creates the
+administrator (root system admin) account. Demo data exists only via the
+opt-in `--seed-demo` flag, for local demos/development.
 
 ## What you need (checked by `doctor`)
 
@@ -31,9 +36,11 @@ This:
 3. writes a fresh `~/mnema/.env` (random `SECRET_KEY` + Postgres password),
 4. verifies every file the build needs (see `manifest`),
 5. builds the `api`/`worker`/`web` images and starts the stack (migrations run
-   on API start),
-6. seeds the "Acme Consulting" demo workspace,
-7. verifies health + demo data and prints URLs and login credentials.
+   on API start).
+
+Open http://localhost:3000 — you land on `/setup` and create the administrator
+account (the first registered user becomes root system admin). No demo data is
+loaded unless you pass `--seed-demo`.
 
 Re-running `setup` **resumes**: it reuses the existing `.env` and volumes (and
 skips re-cloning), so `down` → `setup` brings the same data back up. Pass
@@ -47,10 +54,10 @@ dev/setup.sh setup \
   --source https://github.com/procopioos/Mnema.git \  # what to bootstrap from
   --target ~/mnema \                                   # where to put it
   --project mnema \                                    # compose project namespacing
-  --branch master \                                    # branch to clone
+  --branch main \                                      # branch to clone (default: remote default)
   --copy --source /path/to/checkout \                  # copy a LOCAL checkout (includes uncommitted work)
   --no-clone \                                         # use THIS checkout, in place
-  --skip-seed \                                        # don't load demo data
+  --seed-demo \                                        # load Acme demo data (dev only, known password)
   --skip-check \                                       # skip the prerequisite check
   --force                                              # overwrite non-empty target / skip prompts
 ```
@@ -75,9 +82,19 @@ dev/setup.sh destroy   # down -v + remove volumes/data + remove the target dir
 `--no-clone`); it only removes the bootstrap target. It prompts unless
 `--force` is given.
 
-## Demo access
+## First run
 
-On `http://localhost:3000` (web) / `http://localhost:8000/docs` (API):
+The stack starts **empty**. Open `http://localhost:3000`; `/login` detects the
+empty database and sends you to `/setup`, where you create the administrator
+account. The first registered user becomes **root system admin** and gets an
+owner's personal workspace automatically. After `dev/setup.sh destroy` + a
+fresh `setup`, the flow repeats — the app is always born blank.
+
+## Demo data (opt-in, dev only)
+
+With `--seed-demo`, the "Acme Consulting" workspace, demo accounts, and five
+ready-to-read documents are loaded. On `http://localhost:3000` (web) /
+`http://localhost:8000/docs` (API):
 
 | Email | Role |
 |---|---|
@@ -86,8 +103,8 @@ On `http://localhost:3000` (web) / `http://localhost:8000/docs` (API):
 | `mara@acme.example` | manager |
 | `sam@acme.example` | employee |
 
-Shared demo password: `Acme!demo2026`. The seed also creates folders, tags,
-and five ready-to-read documents (PDF/DOCX/Markdown).
+Shared demo password: `Acme!demo2026` (known, public — never use this on a
+reachable deployment).
 
 ## Files here
 
@@ -100,9 +117,10 @@ and five ready-to-read documents (PDF/DOCX/Markdown).
 
 The actual build/run configuration is **not** duplicated here: `setup.sh`
 consumes the project's own `docker-compose.yml`, `backend/Dockerfile`,
-`frontend/Dockerfile`, `scripts/docker-entrypoint.sh` and
-`scripts/seed_demo.py` straight from the checkout (that's what `manifest`
-verifies), so there is a single source of truth.
+`frontend/Dockerfile` and `scripts/docker-entrypoint.sh` straight from the
+checkout (that's what `manifest` verifies), so there is a single source of
+truth. `backend/scripts/seed_demo.py` (the opt-in demo seed) also ships in the
+checkout but is never called unless `--seed-demo` is passed.
 
 ## Troubleshooting
 

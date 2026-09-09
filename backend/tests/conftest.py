@@ -1,6 +1,8 @@
 import os
 
-os.environ["DATABASE_URL"] = "postgresql+asyncpg://mnema:mnema@localhost:5432/mnema_test"
+os.environ.setdefault(
+    "DATABASE_URL", "postgresql+asyncpg://mnema:mnema@localhost:5432/mnema_test"
+)
 os.environ["SECRET_KEY"] = "test-secret-key-not-for-production"
 os.environ["STORAGE_DIR"] = "data-test"
 

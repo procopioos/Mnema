@@ -19,13 +19,14 @@ docker compose up -d --build
 - API docs: http://localhost:8000/docs
 - Migrations run automatically when the API container starts; storage lives in the `storage_data` volume.
 
-Seed demo data ("Acme Consulting" workspace, owner + admin/manager/employee, ready-made documents):
+The app starts **empty**. Open http://localhost:3000 — you're sent to `/setup`
+to create the administrator account (the first registered user becomes the
+root system admin). To load the optional "Acme Consulting" demo workspace
+(dev only, known public password):
 
 ```bash
 docker compose exec api uv run python -m scripts.seed_demo
 ```
-
-Log in as any member with password `Acme!demo2026` (e.g. `alex@acme.example`, owner and root system admin).
 
 ## Quick start (local dev)
 

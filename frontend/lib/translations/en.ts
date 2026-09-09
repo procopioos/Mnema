@@ -81,6 +81,18 @@ export const en = {
   "register.alreadyHaveAccount": "Already have an account?",
   "register.failed": "Registration failed",
 
+  "setup.welcomeTitle": "Welcome to Mnema",
+  "setup.description": "Create the administrator account to get started.",
+  "setup.fullName": "Full name",
+  "setup.email": "Email",
+  "setup.password": "Password",
+  "setup.confirmPassword": "Confirm password",
+  "setup.passwordMismatch": "Passwords do not match",
+  "setup.creating": "Creating administrator account…",
+  "setup.createAccount": "Create administrator account",
+  "setup.failed": "Could not create the administrator account",
+  "setup.notRequiredRedirect": "This Mnema instance is already set up. Redirecting…",
+
   "dashboard.title": "Dashboard",
   "dashboard.description": "Your workspace at a glance.",
   "dashboard.recentDocuments": "Recent documents",
