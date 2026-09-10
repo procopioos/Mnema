@@ -237,26 +237,27 @@ export function SettingsDialog({
                       }}
                     />
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={savingWorkspace || !workspaceName.trim()}
-                    onClick={onRenameWorkspace}
-                  >
-                    {savingWorkspace ? t("settings.saving") : t("settings.saveChanges")}
-                  </Button>
-                  <Button
-                    variant="destructive"
-                    className="ml-2 bg-destructive/10 text-destructive hover:bg-destructive/20"
-                    size="sm"
-                    onClick={() => {
-                      setWsTyped("");
-                      setDeleteWsOpen(true);
-                    }}
-                  >
-                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                    {t("settings.deleteWorkspace")}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={savingWorkspace || !workspaceName.trim()}
+                      onClick={onRenameWorkspace}
+                    >
+                      {savingWorkspace ? t("settings.saving") : t("settings.saveChanges")}
+                    </Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => {
+                        setWsTyped("");
+                        setDeleteWsOpen(true);
+                      }}
+                    >
+                      <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                      {t("settings.deleteWorkspace")}
+                    </Button>
+                  </div>
                 </div>
 
                 <div className="space-y-3 rounded-lg border p-4">
