@@ -51,7 +51,7 @@ volumes).
 
 ```bash
 dev/setup.sh setup \
-  --source https://github.com/procopioos/Mnema.git \  # what to bootstrap from
+  --source https://github.com/procopioos/Mnema.git \   # what to bootstrap from
   --target ~/mnema \                                   # where to put it
   --project mnema \                                    # compose project namespacing
   --branch main \                                      # branch to clone (default: remote default)
