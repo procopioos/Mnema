@@ -6,6 +6,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.models.document import Document
 from app.models.user import User
 from app.models.workspace import Role, Workspace, WorkspaceMember
+from app.services.workspaces import regenerate_invite_code
 
 
 async def list_workspaces_with_metrics(
@@ -124,3 +125,51 @@ async def remove_member(db: AsyncSession, member: WorkspaceMember) -> None:
         raise ValueError("Cannot remove the workspace owner")
     await db.delete(member)
     await db.flush()
+
+
+async def move_member(
+    db: AsyncSession,
+    user_id: uuid.UUID,
+    from_workspace_id: uuid.UUID,
+    to_workspace_id: uuid.UUID,
+    role: Role,
+) -> WorkspaceMember:
+    """Move a user from one workspace to another atomically.
+
+    Raises ValueError if:
+      - user is not a member of the source workspace
+      - user is the owner of the source workspace
+    """
+    source_member = await db.scalar(
+        select(WorkspaceMember).where(
+            WorkspaceMember.workspace_id == from_workspace_id,
+            WorkspaceMember.user_id == user_id,
+        )
+    )
+    if source_member is None:
+        raise ValueError("User is not a member of the source workspace")
+    if source_member.role == Role.owner:
+        raise ValueError("Cannot move the workspace owner")
+
+    target_member = await db.scalar(
+        select(WorkspaceMember).where(
+            WorkspaceMember.workspace_id == to_workspace_id,
+            WorkspaceMember.user_id == user_id,
+        )
+    )
+    if target_member is not None:
+        target_member.role = role
+        await db.delete(source_member)
+        await db.flush()
+        return target_member
+
+    await db.delete(source_member)
+    new_member = WorkspaceMember(workspace_id=to_workspace_id, user_id=user_id, role=role)
+    db.add(new_member)
+    await db.flush()
+    return new_member
+
+
+async def rotate_workspace_code(db: AsyncSession, workspace: Workspace) -> str:
+    """Regenerate a workspace's invite code and return it."""
+    return await regenerate_invite_code(db, workspace)

@@ -20,6 +20,7 @@ export default function RegisterPage() {
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [workspaceCode, setWorkspaceCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -28,7 +29,7 @@ export default function RegisterPage() {
     setError(null);
     setSubmitting(true);
     try {
-      await register(email, password, fullName);
+      await register(email, password, fullName, workspaceCode);
       router.push("/");
     } catch (err) {
       setError(err instanceof Error ? err.message : t("register.failed"));
@@ -87,6 +88,20 @@ export default function RegisterPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="workspaceCode">{t("register.workspaceCode")}</Label>
+              <Input
+                id="workspaceCode"
+                inputMode="numeric"
+                autoComplete="off"
+                maxLength={6}
+                placeholder="000000"
+                pattern="\d{6}"
+                value={workspaceCode}
+                onChange={(e) => setWorkspaceCode(e.target.value.replace(/\D/g, ""))}
+              />
+              <p className="text-xs text-zinc-500">{t("register.workspaceCodeHint")}</p>
             </div>
           </CardContent>
           <CardFooter className="flex-col gap-3">

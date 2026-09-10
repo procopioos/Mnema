@@ -43,6 +43,7 @@ class WorkspaceOut(BaseModel):
     slug: str
     owner_id: uuid.UUID
     role: Role | None = None
+    invite_code: str | None = None
     max_documents: int = 0
     max_storage_bytes: int = 0
     document_count: int = 0

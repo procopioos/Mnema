@@ -19,7 +19,7 @@ type AuthState = {
 
 type AuthContextValue = AuthState & {
   login: (email: string, password: string) => Promise<void>;
-  register: (email: string, password: string, fullName: string) => Promise<void>;
+  register: (email: string, password: string, fullName: string, workspaceCode?: string) => Promise<void>;
   logout: () => void;
   refreshWorkspaceMeta: () => Promise<void>;
 };
@@ -88,8 +88,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const register = useCallback(
-    async (email: string, password: string, fullName: string) => {
-      const data = await authApi.register({ email, password, full_name: fullName });
+    async (email: string, password: string, fullName: string, workspaceCode?: string) => {
+      const data = await authApi.register({
+        email,
+        password,
+        full_name: fullName,
+        workspace_code: workspaceCode?.trim() || null,
+      });
       tokenStore.set(data.access_token, data.refresh_token);
       setUser(data.user);
       const list = await workspaces.list();

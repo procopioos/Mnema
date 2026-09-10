@@ -9,6 +9,7 @@ class RegisterRequest(BaseModel):
     email: EmailStr
     password: str = Field(min_length=8, max_length=128)
     full_name: str = Field(min_length=1, max_length=255)
+    workspace_code: str | None = Field(default=None, min_length=6, max_length=6, pattern=r"^\d{6}$")
 
 
 class LoginRequest(BaseModel):

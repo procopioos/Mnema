@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Activity, AlertTriangle, Save, Trash2, Users } from "lucide-react";
+import { Activity, AlertTriangle, Copy, Save, Trash2, Users } from "lucide-react";
 
 import { admin, workspaces } from "@/lib/api";
 import type { Role, WorkspaceMember } from "@/lib/api";
@@ -47,6 +47,8 @@ export function SettingsDialog({
   const isAdmin = canAdmin(role);
 
   const [workspaceName, setWorkspaceName] = useState("");
+  const [inviteCode, setInviteCode] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
   const [savingWorkspace, setSavingWorkspace] = useState(false);
   const [deleteWsOpen, setDeleteWsOpen] = useState(false);
   const [wsTyped, setWsTyped] = useState("");
@@ -57,20 +59,25 @@ export function SettingsDialog({
   const [busyMember, setBusyMember] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open || !isAdmin || !workspaceId) return;
+    if (!open || !workspaceId) return;
     let cancelled = false;
     (async () => {
       try {
         const ws = await workspaces.get(workspaceId);
-        if (!cancelled) setWorkspaceName(ws.name);
+        if (!cancelled) {
+          setWorkspaceName(ws.name);
+          setInviteCode(ws.invite_code ?? null);
+        }
       } catch (err) {
         if (!cancelled) setError(err instanceof Error ? err.message : t("settings.failedToLoad"));
       }
-      try {
-        const list = await workspaces.members.list(workspaceId);
-        if (!cancelled) setMembers(list);
-      } catch (err) {
-        if (!cancelled) setMembersError(err instanceof Error ? err.message : t("settings.membersFailed"));
+      if (isAdmin) {
+        try {
+          const list = await workspaces.members.list(workspaceId);
+          if (!cancelled) setMembers(list);
+        } catch (err) {
+          if (!cancelled) setMembersError(err instanceof Error ? err.message : t("settings.membersFailed"));
+        }
       }
     })();
     return () => {
@@ -156,6 +163,17 @@ export function SettingsDialog({
     }
   }
 
+  async function copyInviteCode() {
+    if (!inviteCode) return;
+    try {
+      await navigator.clipboard.writeText(inviteCode);
+      setCopied(true);
+      window.setTimeout(() => setCopied(false), 1500);
+    } catch {
+      // clipboard unavailable; ignore
+    }
+  }
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -182,6 +200,24 @@ export function SettingsDialog({
                 </select>
               </div>
             </div>
+
+            {workspaceId && inviteCode && (
+              <div className="space-y-3 rounded-lg border p-4">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Copy className="h-4 w-4 text-zinc-500" />
+                  {t("settings.inviteCode")}
+                </div>
+                <p className="text-sm text-zinc-500">{t("settings.inviteCodeHint")}</p>
+                <div className="flex items-center gap-2">
+                  <code className="rounded-md border bg-muted px-3 py-1.5 font-mono text-lg tracking-[0.4em]">
+                    {inviteCode}
+                  </code>
+                  <Button variant="outline" size="sm" onClick={copyInviteCode}>
+                    {copied ? t("common.copied") : t("common.copy")}
+                  </Button>
+                </div>
+              </div>
+            )}
 
             {isAdmin && workspaceId && (
               <>

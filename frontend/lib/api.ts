@@ -149,7 +149,7 @@ function refreshAccess(): Promise<boolean> {
 }
 
 export const auth = {
-  register: (payload: { email: string; password: string; full_name: string }) =>
+  register: (payload: { email: string; password: string; full_name: string; workspace_code?: string | null }) =>
     request<AuthResponse>("/auth/register", { method: "POST", body: JSON.stringify(payload) }),
 
   login: (payload: { email: string; password: string }) =>
@@ -171,6 +171,9 @@ export const admin = {
   },
   updateUser: (id: string, payload: { is_system_admin?: boolean }) =>
     request<AdminUserOut>(`/admin/users/${id}`, { method: "PATCH", body: JSON.stringify(payload) }),
+
+  moveUser: (userId: string, payload: { from_workspace_id: string; to_workspace_id: string; role?: Role }) =>
+    request<AdminMemberOut>(`/admin/users/${userId}/move`, { method: "POST", body: JSON.stringify(payload) }),
 
   audit: (params: { workspaceId?: string; limit?: number; offset?: number } = {}) => {
     const query = new URLSearchParams();
@@ -194,6 +197,9 @@ export const admin = {
         body: JSON.stringify(payload),
       }),
     remove: (id: string) => request<void>(`/admin/workspaces/${id}`, { method: "DELETE" }),
+
+    regenerateCode: (id: string) =>
+      request<AdminWorkspaceOut>(`/admin/workspaces/${id}/regenerate-code`, { method: "POST" }),
 
     members: {
       list: (workspaceId: string) =>

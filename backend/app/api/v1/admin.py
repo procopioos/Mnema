@@ -13,6 +13,7 @@ from app.models.user import User
 from app.models.workspace import Workspace, WorkspaceMember
 from app.schemas.admin import (
     AdminMemberAdd,
+    AdminMemberMove,
     AdminMemberOut,
     AdminMemberUpdate,
     AdminStatsOut,
@@ -59,6 +60,7 @@ def _admin_workspace_out(
         name=workspace.name,
         slug=workspace.slug,
         owner_id=workspace.owner_id,
+        invite_code=workspace.invite_code,
         member_count=member_count,
         document_count=document_count,
         storage_bytes=storage_bytes,
@@ -288,6 +290,26 @@ async def delete_admin_workspace(
     await db.commit()
 
 
+@router.post("/workspaces/{workspace_id}/regenerate-code", response_model=AdminWorkspaceOut)
+async def regenerate_workspace_code(
+    workspace_id: uuid.UUID,
+    user: SystemAdmin,
+    db: DbSession,
+) -> AdminWorkspaceOut:
+    workspace = await _get_workspace(db, workspace_id)
+    new_code = await admin_ws_service.rotate_workspace_code(db, workspace)
+    await audit_service.record(
+        db,
+        user.id,
+        AuditAction.admin_workspace_regenerate_code,
+        workspace_id=workspace.id,
+        detail={"new_workspace_code": new_code},
+    )
+    await db.commit()
+    member_count, document_count, storage_bytes = await admin_ws_service.workspace_usage(db, workspace.id)
+    return _admin_workspace_out(workspace, member_count, document_count, storage_bytes)
+
+
 @router.get("/workspaces/{workspace_id}/members", response_model=list[AdminMemberOut])
 async def list_workspace_members(
     workspace_id: uuid.UUID,
@@ -379,3 +401,52 @@ async def remove_workspace_member(
         detail={"user_id": str(member_user_id)},
     )
     await db.commit()
+
+
+@router.post(
+    "/users/{target_user_id}/move",
+    response_model=AdminMemberOut,
+    status_code=status.HTTP_200_OK,
+)
+async def move_workspace_member(
+    target_user_id: uuid.UUID,
+    payload: AdminMemberMove,
+    user: SystemAdmin,
+    db: DbSession,
+) -> AdminMemberOut:
+    """Move a user from one workspace to another in a single transaction."""
+    if payload.from_workspace_id == payload.to_workspace_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Source and target workspaces must be different",
+        )
+    target = await db.get(User, target_user_id)
+    if target is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    await _get_workspace(db, payload.from_workspace_id)
+    await _get_workspace(db, payload.to_workspace_id)
+
+    try:
+        member = await admin_ws_service.move_member(
+            db,
+            user_id=target_user_id,
+            from_workspace_id=payload.from_workspace_id,
+            to_workspace_id=payload.to_workspace_id,
+            role=payload.role,
+        )
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from None
+    await audit_service.record(
+        db,
+        user.id,
+        AuditAction.workspace_member_move,
+        workspace_id=payload.to_workspace_id,
+        detail={
+            "user_id": str(target_user_id),
+            "from_workspace_id": str(payload.from_workspace_id),
+            "to_workspace_id": str(payload.to_workspace_id),
+            "role": payload.role.value,
+        },
+    )
+    await db.commit()
+    return await _member_out(db, member)

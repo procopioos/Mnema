@@ -32,3 +32,7 @@ class QuotaExceededError(AppError):
     def __init__(self, code: str, message: str) -> None:
         self.code = code
         super().__init__(message)
+
+
+class InvalidInviteCodeError(AppError):
+    """Raised when a workspace invite code is invalid or not found."""

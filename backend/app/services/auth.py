@@ -3,10 +3,10 @@ import uuid
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.domain.exceptions import DuplicateEmailError
+from app.domain.exceptions import DuplicateEmailError, InvalidInviteCodeError
 from app.models.user import User
-from app.models.workspace import Workspace, WorkspaceMember
-from app.services.workspaces import create_workspace
+from app.models.workspace import Role, Workspace, WorkspaceMember
+from app.services.workspaces import create_workspace, get_workspace_by_code
 
 
 async def register_user(
@@ -14,6 +14,7 @@ async def register_user(
     email: str,
     password_hash: str,
     full_name: str,
+    workspace_code: str | None = None,
 ) -> tuple[User, Workspace]:
     email = email.lower()
     existing = await db.scalar(select(User).where(User.email == email))
@@ -33,8 +34,17 @@ async def register_user(
     db.add(user)
     await db.flush()
 
-    first_name = full_name.strip().split(maxsplit=1)[0]
-    workspace = await create_workspace(db, f"{first_name}'s Workspace", owner_id=user.id)
+    # First user always gets their own workspace
+    if is_first or workspace_code is None:
+        first_name = full_name.strip().split(maxsplit=1)[0]
+        workspace = await create_workspace(db, f"{first_name}'s Workspace", owner_id=user.id)
+    else:
+        workspace = await get_workspace_by_code(db, workspace_code.strip())
+        if workspace is None:
+            raise InvalidInviteCodeError("Workspace not found for the given invite code")
+        db.add(WorkspaceMember(workspace_id=workspace.id, user_id=user.id, role=Role.employee))
+        await db.flush()
+
     return user, workspace
 
 

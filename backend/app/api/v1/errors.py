@@ -4,6 +4,7 @@ from fastapi.responses import JSONResponse
 from app.domain.exceptions import (
     DuplicateEmailError,
     DuplicateNameError,
+    InvalidInviteCodeError,
     InvalidReferenceError,
     QueueUnavailableError,
     QuotaExceededError,
@@ -49,3 +50,7 @@ def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(QueueUnavailableError)
     async def _queue_unavailable(_request: Request, exc: QueueUnavailableError) -> JSONResponse:
         return _error(status.HTTP_503_SERVICE_UNAVAILABLE, str(exc))
+
+    @app.exception_handler(InvalidInviteCodeError)
+    async def _invalid_invite_code(_request: Request, exc: InvalidInviteCodeError) -> JSONResponse:
+        return _error(status.HTTP_404_NOT_FOUND, "invalid_invite_code")

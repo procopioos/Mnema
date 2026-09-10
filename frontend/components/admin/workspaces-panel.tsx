@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Pencil, Plus, Settings2, Trash2, Users } from "lucide-react";
+import { Copy, Pencil, Plus, RefreshCw, Settings2, Trash2, Users } from "lucide-react";
 
 import { admin } from "@/lib/api";
 import type { AdminMemberOut, AdminUserOut, AdminWorkspaceOut, Role } from "@/lib/api";
@@ -38,6 +38,7 @@ export function WorkspacesPanel() {
   const [error, setError] = useState<string | null>(null);
   const [dialog, setDialog] = useState<{ kind: DialogKind; ws: AdminWorkspaceOut | null } | null>(null);
   const [busy, setBusy] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
 
   function load() {
     Promise.all([admin.workspaces.list(), admin.users()])
@@ -53,6 +54,30 @@ export function WorkspacesPanel() {
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  async function copyCode(id: string, code: string) {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopiedId(id);
+      window.setTimeout(() => setCopiedId(null), 1500);
+    } catch {
+      // clipboard unavailable; ignore
+    }
+  }
+
+  async function regenerateCode(target: AdminWorkspaceOut) {
+    if (!window.confirm(`${t("admin.regenerateCode")} — ${target.name}?`)) return;
+    setBusy(target.id);
+    setError(null);
+    try {
+      await admin.workspaces.regenerateCode(target.id);
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("admin.updateFailed"));
+    } finally {
+      setBusy(null);
+    }
+  }
 
   async function deleteWorkspace(target: AdminWorkspaceOut) {
     setBusy(target.id);
@@ -102,8 +127,34 @@ export function WorkspacesPanel() {
                     {ws.member_count} {t("admin.members")} · {ws.document_count}{" "}
                     {t("documents.documents")} · {formatBytes(ws.storage_bytes ?? 0)}
                   </p>
+                  {ws.invite_code && (
+                    <div className="mt-1 flex items-center gap-1.5">
+                      <code className="rounded border bg-muted px-1.5 py-0.5 font-mono text-xs tracking-widest">
+                        {ws.invite_code}
+                      </code>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-1.5 text-xs"
+                        onClick={() => copyCode(ws.id, ws.invite_code!)}
+                      >
+                        <Copy className="h-3 w-3" />
+                        {copiedId === ws.id ? t("common.copied") : t("common.copy")}
+                      </Button>
+                    </div>
+                  )}
                 </div>
                 <div className="flex shrink-0 items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    title={t("admin.regenerateCode")}
+                    disabled={busy === ws.id}
+                    onClick={() => regenerateCode(ws)}
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                    <span className="hidden lg:inline">{t("admin.regenerateCode")}</span>
+                  </Button>
                   <Button variant="ghost" size="sm" onClick={() => setDialog({ kind: "rename", ws })}>
                     <Pencil className="h-3.5 w-3.5" />
                     <span className="hidden lg:inline">{t("admin.rename")}</span>
@@ -177,6 +228,7 @@ export function WorkspacesPanel() {
         <MembersDialog
           workspace={dialog.ws}
           users={users}
+          allWorkspaces={workspaces ?? []}
           onClose={() => setDialog(null)}
           onChanged={() => load()}
         />
@@ -415,11 +467,13 @@ function QuotaDialog({
 function MembersDialog({
   workspace,
   users,
+  allWorkspaces,
   onClose,
   onChanged,
 }: {
   workspace: AdminWorkspaceOut;
   users: AdminUserOut[];
+  allWorkspaces: AdminWorkspaceOut[];
   onClose: () => void;
   onChanged: () => void;
 }) {
@@ -430,6 +484,7 @@ function MembersDialog({
   const [addRole, setAddRole] = useState<Role>("employee");
   const [busy, setBusy] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
+  const [moving, setMoving] = useState<AdminMemberOut | null>(null);
 
   function loadMembers() {
     admin.workspaces.members
@@ -502,8 +557,9 @@ function MembersDialog({
   const available = users.filter((u) => !memberIds.has(u.id));
 
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent>
+    <>
+      <Dialog open onOpenChange={(open) => !open && onClose()}>
+        <DialogContent>
         <DialogHeader>
           <DialogTitle>{t("admin.manageMembersTitle")}</DialogTitle>
         </DialogHeader>
@@ -583,6 +639,15 @@ function MembersDialog({
                   <Button
                     variant="ghost"
                     size="sm"
+                    disabled={member.role === "owner" || allWorkspaces.length <= 1}
+                    onClick={() => setMoving(member)}
+                    className="text-zinc-500"
+                  >
+                    {t("admin.move")}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
                     className="text-red-600 hover:bg-red-500/10 hover:text-red-600 dark:text-red-400"
                     disabled={member.role === "owner" || busy === member.user_id}
                     onClick={() => removeMember(member)}
@@ -595,9 +660,123 @@ function MembersDialog({
           </ul>
         )}
 
-        <DialogFooter>
+<DialogFooter>
           <Button variant="outline" onClick={onClose}>
             {t("common.cancel")}
+          </Button>
+        </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {moving && (
+        <MoveMemberDialog
+          member={moving}
+          fromWorkspaceId={workspace.id}
+          targetWorkspaces={allWorkspaces.filter((w) => w.id !== workspace.id)}
+          onClose={() => setMoving(null)}
+          onMoved={() => {
+            setMoving(null);
+            loadMembers();
+            onChanged();
+          }}
+        />
+      )}
+    </>
+  );
+}
+
+function MoveMemberDialog({
+  member,
+  fromWorkspaceId,
+  targetWorkspaces,
+  onClose,
+  onMoved,
+}: {
+  member: AdminMemberOut;
+  fromWorkspaceId: string;
+  targetWorkspaces: AdminWorkspaceOut[];
+  onClose: () => void;
+  onMoved: () => void;
+}) {
+  const { t } = useLanguage();
+  const [targetId, setTargetId] = useState("");
+  const [role, setRole] = useState<Role>("employee");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function move() {
+    if (!targetId) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await admin.moveUser(member.user_id, {
+        from_workspace_id: fromWorkspaceId,
+        to_workspace_id: targetId,
+        role,
+      });
+      onMoved();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("admin.moveFailed"));
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && !saving && onClose()}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>{t("admin.moveMemberTitle")}</DialogTitle>
+          <DialogDescription>
+            {member.full_name || member.email} — {t("admin.moveConfirm")}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="move-target">{t("admin.moveTargetWorkspace")}</Label>
+            <select
+              id="move-target"
+              value={targetId}
+              onChange={(e) => setTargetId(e.target.value)}
+              className={SELECT_CLASSES}
+            >
+              <option value="">{t("admin.selectUser")}</option>
+              {targetWorkspaces.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name}
+                </option>
+              ))}
+            </select>
+            {targetWorkspaces.length === 0 && (
+              <p className="text-xs text-zinc-400">{t("admin.noOtherWorkspaces")}</p>
+            )}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="move-role">{t("admin.memberRole")}</Label>
+            <select
+              id="move-role"
+              value={role}
+              onChange={(e) => setRole(e.target.value as Role)}
+              className={SELECT_CLASSES}
+            >
+              {ROLES.map((r) => (
+                <option key={r} value={r}>
+                  {t(ROLE_LABEL_KEY[r])}
+                </option>
+              ))}
+            </select>
+          </div>
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={saving}>
+            {t("common.cancel")}
+          </Button>
+          <Button onClick={move} disabled={saving || !targetId}>
+            {saving ? t("admin.saving") : t("admin.moveConfirm")}
           </Button>
         </DialogFooter>
       </DialogContent>

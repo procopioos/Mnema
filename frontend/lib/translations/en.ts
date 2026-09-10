@@ -62,6 +62,14 @@ export const en = {
   "admin.ownerCannotChange": "The owner's role cannot be changed",
   "admin.allWorkspaces": "All workspaces",
   "admin.activityFor": "Activity for",
+  "admin.inviteCode": "Invite code",
+  "admin.regenerateCode": "Regenerate",
+  "admin.move": "Move",
+  "admin.moveMemberTitle": "Move member to workspace",
+  "admin.moveTargetWorkspace": "Target workspace",
+  "admin.moveConfirm": "Move",
+  "admin.moveFailed": "Failed to move member",
+  "admin.noOtherWorkspaces": "No other workspaces to move into",
 
   "login.welcomeBack": "Welcome back",
   "login.description": "Sign in to your Mnema workspace.",
@@ -80,6 +88,8 @@ export const en = {
   "register.createAccount": "Create account",
   "register.alreadyHaveAccount": "Already have an account?",
   "register.failed": "Registration failed",
+  "register.workspaceCode": "Workspace code (optional)",
+  "register.workspaceCodeHint": "Have a code from your team? Enter it to join their workspace. Leave empty to create your own.",
 
   "setup.welcomeTitle": "Welcome to Mnema",
   "setup.description": "Create the administrator account to get started.",
@@ -215,6 +225,8 @@ export const en = {
   "settings.activityDescription": "Recent activity in this workspace.",
   "settings.noActivity": "No activity yet.",
   "settings.activityFailed": "Failed to load activity",
+  "settings.inviteCode": "Invite code",
+  "settings.inviteCodeHint": "Share this code with team members so they can join this workspace on sign-up.",
 
   "audit.previous": "Previous",
   "audit.next": "Next",
@@ -233,6 +245,8 @@ export const en = {
   "audit.action.admin.workspace.rename": "Renamed a workspace",
   "audit.action.admin.workspace.delete": "Deleted a workspace",
   "audit.action.admin.workspace.quota": "Changed workspace usage limits",
+  "audit.action.admin.workspace.regenerate_code": "Regenerated workspace invite code",
+  "audit.action.workspace.member.move": "Moved a member between workspaces",
 
   "role.owner": "Owner",
   "role.admin": "Admin",
@@ -285,6 +299,8 @@ export const en = {
   "common.cancel": "Cancel",
   "common.saving": "Saving…",
   "common.done": "Done",
+  "common.copy": "Copy",
+  "common.copied": "Copied",
   "common.copyright": "© 2026 procopioos. All rights reserved.",
 
   "languages.en": "English",

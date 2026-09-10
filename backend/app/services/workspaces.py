@@ -1,4 +1,5 @@
 import re
+import secrets
 import uuid
 
 from sqlalchemy import func, select
@@ -50,6 +51,7 @@ def serialize_workspace(
         slug=workspace.slug,
         owner_id=workspace.owner_id,
         role=role,
+        invite_code=workspace.invite_code,
         max_documents=max_documents,
         max_storage_bytes=max_storage_bytes,
         document_count=document_count,
@@ -78,8 +80,32 @@ async def unique_slug(db: AsyncSession, name: str, exclude_id: uuid.UUID | None 
     return candidate
 
 
+async def generate_unique_invite_code(db: AsyncSession) -> str:
+    """Generate a unique 6-digit numeric code for a workspace."""
+    for _ in range(50):
+        code = f"{secrets.randbelow(900000) + 100000:06d}"
+        exists = await db.scalar(select(Workspace.id).where(Workspace.invite_code == code))
+        if not exists:
+            return code
+    raise RuntimeError("Could not generate unique invite code")
+
+
+async def get_workspace_by_code(db: AsyncSession, code: str) -> Workspace | None:
+    """Look up a workspace by its 6-digit invite code."""
+    return await db.scalar(select(Workspace).where(Workspace.invite_code == code))
+
+
+async def regenerate_invite_code(db: AsyncSession, workspace: Workspace) -> str:
+    """Assign a new unique invite code to a workspace and return it."""
+    new_code = await generate_unique_invite_code(db)
+    workspace.invite_code = new_code
+    await db.flush()
+    return new_code
+
+
 async def create_workspace(db: AsyncSession, name: str, owner_id: uuid.UUID) -> Workspace:
-    workspace = Workspace(name=name, slug=await unique_slug(db, name), owner_id=owner_id)
+    invite_code = await generate_unique_invite_code(db)
+    workspace = Workspace(name=name, slug=await unique_slug(db, name), owner_id=owner_id, invite_code=invite_code)
     db.add(workspace)
     await db.flush()
     db.add(WorkspaceMember(workspace_id=workspace.id, user_id=owner_id, role=Role.owner))

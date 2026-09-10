@@ -17,6 +17,8 @@ export const AUDIT_ACTION_LABEL_KEY: Record<AuditAction, TranslationKey> = {
   "admin.workspace.rename": "audit.action.admin.workspace.rename",
   "admin.workspace.delete": "audit.action.admin.workspace.delete",
   "admin.workspace.quota": "audit.action.admin.workspace.quota",
+  "admin.workspace.regenerate_code": "audit.action.admin.workspace.regenerate_code",
+  "workspace.member.move": "audit.action.workspace.member.move",
 };
 
 export function formatAuditTime(value: string): string {

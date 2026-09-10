@@ -21,6 +21,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/setup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Setup Status
+         * @description Whether the app still needs its first administrator account (empty DB).
+         */
+        get: operations["setup_status_api_v1_setup_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/register": {
         parameters: {
             query?: never;
@@ -527,6 +547,23 @@ export interface paths {
         patch: operations["update_admin_workspace_api_v1_admin_workspaces__workspace_id__patch"];
         trace?: never;
     };
+    "/api/v1/admin/workspaces/{workspace_id}/regenerate-code": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Regenerate Workspace Code */
+        post: operations["regenerate_workspace_code_api_v1_admin_workspaces__workspace_id__regenerate_code_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/workspaces/{workspace_id}/members": {
         parameters: {
             query?: never;
@@ -561,6 +598,26 @@ export interface paths {
         head?: never;
         /** Update Workspace Member */
         patch: operations["update_workspace_member_api_v1_admin_workspaces__workspace_id__members__member_user_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/users/{target_user_id}/move": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Move Workspace Member
+         * @description Move a user from one workspace to another in a single transaction.
+         */
+        post: operations["move_workspace_member_api_v1_admin_users__target_user_id__move_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/health": {
@@ -642,6 +699,21 @@ export interface components {
              * Format: uuid
              */
             user_id: string;
+            /** @default employee */
+            role: components["schemas"]["Role"];
+        };
+        /** AdminMemberMove */
+        AdminMemberMove: {
+            /**
+             * From Workspace Id
+             * Format: uuid
+             */
+            from_workspace_id: string;
+            /**
+             * To Workspace Id
+             * Format: uuid
+             */
+            to_workspace_id: string;
             /** @default employee */
             role: components["schemas"]["Role"];
         };
@@ -760,6 +832,8 @@ export interface components {
              * Format: uuid
              */
             owner_id: string;
+            /** Invite Code */
+            invite_code?: string | null;
             /**
              * Member Count
              * @default 0
@@ -798,7 +872,7 @@ export interface components {
          * AuditAction
          * @enum {string}
          */
-        AuditAction: "document.view" | "document.download" | "document.upload" | "document.delete" | "document.visibility" | "workspace.member.add" | "workspace.member.remove" | "workspace.member.role" | "auth.login" | "admin.reset" | "admin.user.update" | "admin.workspace.create" | "admin.workspace.rename" | "admin.workspace.delete" | "admin.workspace.quota";
+        AuditAction: "document.view" | "document.download" | "document.upload" | "document.delete" | "document.visibility" | "workspace.member.add" | "workspace.member.remove" | "workspace.member.role" | "auth.login" | "admin.reset" | "admin.user.update" | "admin.workspace.create" | "admin.workspace.rename" | "admin.workspace.delete" | "admin.workspace.quota" | "admin.workspace.regenerate_code" | "workspace.member.move";
         /** AuditLogListResponse */
         AuditLogListResponse: {
             /** Items */
@@ -1100,12 +1174,19 @@ export interface components {
             password: string;
             /** Full Name */
             full_name: string;
+            /** Workspace Code */
+            workspace_code?: string | null;
         };
         /**
          * Role
          * @enum {string}
          */
         Role: "owner" | "admin" | "manager" | "employee";
+        /** SetupStatus */
+        SetupStatus: {
+            /** Required */
+            required: boolean;
+        };
         /** TagCreate */
         TagCreate: {
             /** Name */
@@ -1262,6 +1343,8 @@ export interface components {
              */
             owner_id: string;
             role?: components["schemas"]["Role"] | null;
+            /** Invite Code */
+            invite_code?: string | null;
             /**
              * Max Documents
              * @default 0
@@ -1320,6 +1403,26 @@ export interface operations {
                     "application/json": {
                         [key: string]: string;
                     };
+                };
+            };
+        };
+    };
+    setup_status_api_v1_setup_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SetupStatus"];
                 };
             };
         };
@@ -2635,6 +2738,37 @@ export interface operations {
             };
         };
     };
+    regenerate_workspace_code_api_v1_admin_workspaces__workspace_id__regenerate_code_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                workspace_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminWorkspaceOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_workspace_members_api_v1_admin_workspaces__workspace_id__members_get: {
         parameters: {
             query?: never;
@@ -2744,6 +2878,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["AdminMemberUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AdminMemberOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    move_workspace_member_api_v1_admin_users__target_user_id__move_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                target_user_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AdminMemberMove"];
             };
         };
         responses: {

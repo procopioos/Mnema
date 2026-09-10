@@ -30,6 +30,8 @@ class AuditAction(enum.StrEnum):
     admin_workspace_rename = "admin.workspace.rename"
     admin_workspace_delete = "admin.workspace.delete"
     admin_workspace_quota = "admin.workspace.quota"
+    admin_workspace_regenerate_code = "admin.workspace.regenerate_code"
+    workspace_member_move = "workspace.member.move"
 
 
 def _action_values(enum_cls: type[enum.StrEnum]) -> list[str]:

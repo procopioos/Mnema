@@ -37,6 +37,7 @@ async def register(payload: RegisterRequest, db: DbSession) -> AuthResponse:
         email=payload.email,
         password_hash=hash_password(payload.password),
         full_name=payload.full_name,
+        workspace_code=payload.workspace_code,
     )
     await db.commit()
     await db.refresh(user)

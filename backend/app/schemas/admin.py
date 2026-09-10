@@ -55,6 +55,7 @@ class AdminWorkspaceOut(BaseModel):
     name: str
     slug: str
     owner_id: uuid.UUID
+    invite_code: str | None = None
     member_count: int = 0
     document_count: int = 0
     storage_bytes: int = 0
@@ -77,3 +78,9 @@ class AdminMemberAdd(BaseModel):
 
 class AdminMemberUpdate(BaseModel):
     role: Role
+
+
+class AdminMemberMove(BaseModel):
+    from_workspace_id: uuid.UUID
+    to_workspace_id: uuid.UUID
+    role: Role = Role.employee

@@ -64,6 +64,14 @@ export const it: { [K in TranslationKey]: string } = {
   "admin.ownerCannotChange": "Il ruolo del proprietario non può essere modificato",
   "admin.allWorkspaces": "Tutti gli spazi di lavoro",
   "admin.activityFor": "Attività per",
+  "admin.inviteCode": "Codice di invito",
+  "admin.regenerateCode": "Rigenera",
+  "admin.move": "Sposta",
+  "admin.moveMemberTitle": "Sposta membro in uno spazio di lavoro",
+  "admin.moveTargetWorkspace": "Spazio di lavoro di destinazione",
+  "admin.moveConfirm": "Sposta",
+  "admin.moveFailed": "Spostamento del membro non riuscito",
+  "admin.noOtherWorkspaces": "Nessun altro spazio di lavoro disponibile",
 
   "login.welcomeBack": "Bentornato",
   "login.description": "Accedi al tuo spazio Mnema.",
@@ -82,6 +90,8 @@ export const it: { [K in TranslationKey]: string } = {
   "register.createAccount": "Crea account",
   "register.alreadyHaveAccount": "Hai già un account?",
   "register.failed": "Registrazione non riuscita",
+  "register.workspaceCode": "Codice spazio di lavoro (facoltativo)",
+  "register.workspaceCodeHint": "Hai un codice dal tuo team? Inseriscilo per unirti al loro spazio di lavoro. Lascialo vuoto per crearne uno tuo.",
 
   "setup.welcomeTitle": "Benvenuto su Mnema",
   "setup.description": "Crea l'account amministratore per iniziare.",
@@ -217,6 +227,8 @@ export const it: { [K in TranslationKey]: string } = {
   "settings.activityDescription": "Attività recente in questo spazio di lavoro.",
   "settings.noActivity": "Nessuna attività.",
   "settings.activityFailed": "Impossibile caricare l'attività",
+  "settings.inviteCode": "Codice di invito",
+  "settings.inviteCodeHint": "Condividi questo codice con i membri del team così possono unirsi a questo spazio di lavoro alla registrazione.",
 
   "audit.previous": "Precedente",
   "audit.next": "Successivo",
@@ -235,6 +247,8 @@ export const it: { [K in TranslationKey]: string } = {
   "audit.action.admin.workspace.rename": "Ha rinominato uno spazio di lavoro",
   "audit.action.admin.workspace.delete": "Ha eliminato uno spazio di lavoro",
   "audit.action.admin.workspace.quota": "Ha modificato i limiti di utilizzo dello spazio di lavoro",
+  "audit.action.admin.workspace.regenerate_code": "Ha rigenerato il codice di invito dello spazio di lavoro",
+  "audit.action.workspace.member.move": "Ha spostato un membro tra spazi di lavoro",
 
   "role.owner": "Proprietario",
   "role.admin": "Amministratore",
@@ -287,6 +301,8 @@ export const it: { [K in TranslationKey]: string } = {
   "common.cancel": "Annulla",
   "common.saving": "Salvo...",
   "common.done": "Fatto",
+  "common.copy": "Copia",
+  "common.copied": "Copiato",
   "common.copyright": "© 2026 procopioos. Tutti i diritti riservati.",
 
   "languages.en": "English",

@@ -32,6 +32,8 @@ class Workspace(UUIDMixin, TimestampMixin, Base):
     slug: Mapped[str] = mapped_column(String(255), unique=True, index=True)
     owner_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("users.id", ondelete="RESTRICT"))
 
+    invite_code: Mapped[str] = mapped_column(String(6), unique=True, index=True)
+
     max_documents: Mapped[int | None] = mapped_column(Integer, nullable=True)
     max_storage_bytes: Mapped[int | None] = mapped_column(BigInteger, nullable=True)
 
