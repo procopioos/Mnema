@@ -27,6 +27,7 @@
 #   --force          bypass safety prompts (used by destroy / non-empty target)
 #   --help
 #
+# @procopioos 2026-09-10 (yyyy-mm-dd)
 # Host ports are overridable via API_PORT / WEB_PORT / POSTGRES_PORT / REDIS_PORT.
 
 set -euo pipefail
