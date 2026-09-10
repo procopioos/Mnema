@@ -8,6 +8,7 @@ import { admin, workspaces } from "@/lib/api";
 import type { Role, WorkspaceMember } from "@/lib/api";
 import { useAuth } from "@/lib/auth-context";
 import { useLanguage, LANGUAGES } from "@/lib/i18n";
+import type { TranslationKey } from "@/lib/translations/en";
 import { canAdmin, canManage, ROLE_LABEL_KEY } from "@/lib/roles";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AuditView } from "@/components/audit-view";
@@ -29,6 +30,18 @@ const SELECT_CLASSES =
 
 const ROLES: Role[] = ["owner", "admin", "manager", "employee"];
 
+type Tab = "general" | "workspace" | "team" | "activity" | "advanced";
+
+const ALL_TABS: Tab[] = ["general", "workspace", "team", "activity", "advanced"];
+
+const TAB_KEY: Record<Tab, TranslationKey> = {
+  general: "settings.tabs.general",
+  workspace: "settings.tabs.workspace",
+  team: "settings.tabs.team",
+  activity: "settings.tabs.activity",
+  advanced: "settings.tabs.advanced",
+};
+
 export function SettingsDialog({
   open,
   onOpenChange,
@@ -45,6 +58,19 @@ export function SettingsDialog({
   const [error, setError] = useState<string | null>(null);
 
   const isAdmin = canAdmin(role);
+  const isManager = canManage(role);
+  const isSystemAdmin = !!user?.is_system_admin;
+
+  const visibleTabs: Tab[] = ALL_TABS.filter((tab) => {
+    if (tab === "workspace" || tab === "team") return isAdmin && !!workspaceId;
+    if (tab === "activity") return isManager && !!workspaceId;
+    if (tab === "advanced") return isSystemAdmin;
+    return true;
+  });
+
+  const [activeTab, setActiveTab] = useState<Tab>("general");
+
+  const effectiveTab = visibleTabs.includes(activeTab) ? activeTab : (visibleTabs[0] ?? "general");
 
   const [workspaceName, setWorkspaceName] = useState("");
   const [inviteCode, setInviteCode] = useState<string | null>(null);
@@ -181,146 +207,174 @@ export function SettingsDialog({
           <DialogHeader>
             <DialogTitle>{t("settings.title")}</DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="space-y-2 rounded-lg border p-4">
-              <p className="text-sm text-zinc-500">{t("settings.languageDescription")}</p>
-              <div className="space-y-1.5">
-                <Label htmlFor="settings-language">{t("settings.language")}</Label>
-                <select
-                  id="settings-language"
-                  value={language}
-                  onChange={(e) => setLanguage(e.target.value as typeof language)}
-                  className={SELECT_CLASSES}
-                >
-                  {LANGUAGES.map((lang) => (
-                    <option key={lang} value={lang}>
-                      {t(lang === "en" ? "languages.en" : "languages.it")}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
 
-            {workspaceId && inviteCode && (
+          <div className="flex gap-1 rounded-lg border p-1">
+            {visibleTabs.map((tab) => (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  effectiveTab === tab
+                    ? "bg-muted text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+              >
+                {t(TAB_KEY[tab])}
+              </button>
+            ))}
+          </div>
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="space-y-4">
+            {effectiveTab === "general" && (
+              <>
+                <div className="space-y-2 rounded-lg border p-4">
+                  <p className="text-sm text-zinc-500">{t("settings.languageDescription")}</p>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="settings-language">{t("settings.language")}</Label>
+                    <select
+                      id="settings-language"
+                      value={language}
+                      onChange={(e) => setLanguage(e.target.value as typeof language)}
+                      className={SELECT_CLASSES}
+                    >
+                      {LANGUAGES.map((lang) => (
+                        <option key={lang} value={lang}>
+                          {t(lang === "en" ? "languages.en" : "languages.it")}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {workspaceId && inviteCode && (
+                  <div className="space-y-3 rounded-lg border p-4">
+                    <div className="flex items-center gap-2 text-sm font-medium">
+                      <Copy className="h-4 w-4 text-zinc-500" />
+                      {t("settings.inviteCode")}
+                    </div>
+                    <p className="text-sm text-zinc-500">{t("settings.inviteCodeHint")}</p>
+                    <div className="flex items-center gap-2">
+                      <code className="rounded-md border bg-muted px-3 py-1.5 font-mono text-lg tracking-[0.4em]">
+                        {inviteCode}
+                      </code>
+                      <Button variant="outline" size="sm" onClick={copyInviteCode}>
+                        {copied ? t("common.copied") : t("common.copy")}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
+
+            {effectiveTab === "workspace" && isAdmin && workspaceId && (
               <div className="space-y-3 rounded-lg border p-4">
                 <div className="flex items-center gap-2 text-sm font-medium">
-                  <Copy className="h-4 w-4 text-zinc-500" />
-                  {t("settings.inviteCode")}
+                  <Save className="h-4 w-4 text-zinc-500" />
+                  {t("settings.workspace")}
                 </div>
-                <p className="text-sm text-zinc-500">{t("settings.inviteCodeHint")}</p>
+                <div className="space-y-1.5">
+                  <Label htmlFor="settings-workspace-name">{t("settings.workspaceName")}</Label>
+                  <Input
+                    id="settings-workspace-name"
+                    value={workspaceName}
+                    onChange={(e) => setWorkspaceName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !savingWorkspace) onRenameWorkspace();
+                    }}
+                  />
+                </div>
                 <div className="flex items-center gap-2">
-                  <code className="rounded-md border bg-muted px-3 py-1.5 font-mono text-lg tracking-[0.4em]">
-                    {inviteCode}
-                  </code>
-                  <Button variant="outline" size="sm" onClick={copyInviteCode}>
-                    {copied ? t("common.copied") : t("common.copy")}
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    disabled={savingWorkspace || !workspaceName.trim()}
+                    onClick={onRenameWorkspace}
+                  >
+                    {savingWorkspace ? t("settings.saving") : t("settings.saveChanges")}
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    size="sm"
+                    onClick={() => {
+                      setWsTyped("");
+                      setDeleteWsOpen(true);
+                    }}
+                  >
+                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                    {t("settings.deleteWorkspace")}
                   </Button>
                 </div>
               </div>
             )}
 
-            {isAdmin && workspaceId && (
-              <>
-                <div className="space-y-3 rounded-lg border p-4">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <Save className="h-4 w-4 text-zinc-500" />
-                    {t("settings.workspace")}
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="settings-workspace-name">{t("settings.workspaceName")}</Label>
-                    <Input
-                      id="settings-workspace-name"
-                      value={workspaceName}
-                      onChange={(e) => setWorkspaceName(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !savingWorkspace) onRenameWorkspace();
-                      }}
-                    />
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      disabled={savingWorkspace || !workspaceName.trim()}
-                      onClick={onRenameWorkspace}
-                    >
-                      {savingWorkspace ? t("settings.saving") : t("settings.saveChanges")}
-                    </Button>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => {
-                        setWsTyped("");
-                        setDeleteWsOpen(true);
-                      }}
-                    >
-                      <Trash2 className="mr-1.5 h-3.5 w-3.5" />
-                      {t("settings.deleteWorkspace")}
-                    </Button>
-                  </div>
+            {effectiveTab === "team" && isAdmin && workspaceId && (
+              <div className="space-y-3 rounded-lg border p-4">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                  <Users className="h-4 w-4 text-zinc-500" />
+                  {t("settings.team")}
                 </div>
-
-                <div className="space-y-3 rounded-lg border p-4">
-                  <div className="flex items-center gap-2 text-sm font-medium">
-                    <Users className="h-4 w-4 text-zinc-500" />
-                    {t("settings.team")}
-                  </div>
-                  {membersError && (
-                    <Alert variant="destructive">
-                      <AlertDescription>{membersError}</AlertDescription>
-                    </Alert>
-                  )}
-                  {members === null ? (
-                    <p className="text-sm text-zinc-400">{t("settings.loading")}</p>
-                  ) : members.length === 0 ? (
-                    <p className="text-sm text-zinc-400">{t("settings.noMembers")}</p>
-                  ) : (
-                    <ul className="space-y-2">
-                      {members.map((member) => (
-                        <li
-                          key={member.user_id}
-                          className="flex items-center justify-between gap-3 rounded-md border px-3 py-2"
-                        >
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-medium">
-                              {member.full_name}
-                              <span className="ml-1.5 text-xs font-normal text-zinc-400">{member.email}</span>
-                            </p>
-                            <RoleBadge role={member.role} />
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <select
-                              aria-label={t("settings.memberRole")}
-                              value={member.role}
-                              disabled={member.role === "owner" || busyMember === member.user_id}
-                              onChange={(e) => changeMemberRole(member, e.target.value as Role)}
-                              className="h-9 w-28 rounded-md border border-input bg-transparent px-2 py-1 text-sm disabled:opacity-60"
-                            >
-                              {ROLES.map((r) => (
-                                <option key={r} value={r} disabled={r === "owner" || r === member.role}>
-                                  {t(ROLE_LABEL_KEY[r])}
-                                </option>
-                              ))}
-                            </select>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              aria-label={t("settings.removeMember")}
-                              disabled={member.role === "owner" || busyMember === member.user_id}
-                              onClick={() => removeMember(member)}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </div>
-              </>
+                {membersError && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{membersError}</AlertDescription>
+                  </Alert>
+                )}
+                {members === null ? (
+                  <p className="text-sm text-zinc-400">{t("settings.loading")}</p>
+                ) : members.length === 0 ? (
+                  <p className="text-sm text-zinc-400">{t("settings.noMembers")}</p>
+                ) : (
+                  <ul className="space-y-2">
+                    {members.map((member) => (
+                      <li
+                        key={member.user_id}
+                        className="flex items-center justify-between gap-3 rounded-md border px-3 py-2"
+                      >
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium">
+                            {member.full_name}
+                            <span className="ml-1.5 text-xs font-normal text-zinc-400">{member.email}</span>
+                          </p>
+                          <RoleBadge role={member.role} />
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <select
+                            aria-label={t("settings.memberRole")}
+                            value={member.role}
+                            disabled={member.role === "owner" || busyMember === member.user_id}
+                            onChange={(e) => changeMemberRole(member, e.target.value as Role)}
+                            className="h-9 w-28 rounded-md border border-input bg-transparent px-2 py-1 text-sm disabled:opacity-60"
+                          >
+                            {ROLES.map((r) => (
+                              <option key={r} value={r} disabled={r === "owner" || r === member.role}>
+                                {t(ROLE_LABEL_KEY[r])}
+                              </option>
+                            ))}
+                          </select>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            aria-label={t("settings.removeMember")}
+                            disabled={member.role === "owner" || busyMember === member.user_id}
+                            onClick={() => removeMember(member)}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
             )}
 
-            {canManage(role) && workspaceId && (
+            {effectiveTab === "activity" && isManager && workspaceId && (
               <div className="space-y-3 rounded-lg border p-4">
                 <div className="flex items-center gap-2 text-sm font-medium">
                   <Activity className="h-4 w-4 text-zinc-500" />
@@ -331,20 +385,21 @@ export function SettingsDialog({
               </div>
             )}
 
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            {user?.is_system_admin && (
+            {effectiveTab === "advanced" && isSystemAdmin && (
               <div className="space-y-2 rounded-lg border border-red-200 p-4 dark:border-red-900">
                 <div className="flex items-center gap-2 text-sm font-medium text-red-600 dark:text-red-400">
                   <AlertTriangle className="h-4 w-4" />
                   {t("settings.dangerZone")}
                 </div>
                 <p className="text-sm text-zinc-500">{t("settings.resetDescription")}</p>
-                <Button variant="destructive" className="bg-destructive/10 text-destructive hover:bg-destructive/20" onClick={() => { setTyped(""); setConfirmOpen(true); }}>
+                <Button
+                  variant="destructive"
+                  className="bg-destructive/10 text-destructive hover:bg-destructive/20"
+                  onClick={() => {
+                    setTyped("");
+                    setConfirmOpen(true);
+                  }}
+                >
                   {t("settings.resetApp")}
                 </Button>
               </div>
@@ -357,9 +412,7 @@ export function SettingsDialog({
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-red-600 dark:text-red-400">{t("settings.resetTitle")}</DialogTitle>
-            <DialogDescription>
-              {t("settings.resetConfirmDescription")}
-            </DialogDescription>
+            <DialogDescription>{t("settings.resetConfirmDescription")}</DialogDescription>
           </DialogHeader>
           <Input
             value={typed}
@@ -382,9 +435,7 @@ export function SettingsDialog({
         <DialogContent>
           <DialogHeader>
             <DialogTitle className="text-red-600 dark:text-red-400">{t("settings.deleteWorkspaceTitle")}</DialogTitle>
-            <DialogDescription>
-              {t("settings.deleteWorkspaceDescription")}
-            </DialogDescription>
+            <DialogDescription>{t("settings.deleteWorkspaceDescription")}</DialogDescription>
           </DialogHeader>
           <Input
             value={wsTyped}

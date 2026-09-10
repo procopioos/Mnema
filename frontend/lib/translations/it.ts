@@ -230,6 +230,12 @@ export const it: { [K in TranslationKey]: string } = {
   "settings.inviteCode": "Codice di invito",
   "settings.inviteCodeHint": "Condividi questo codice con i membri del team così possono unirsi a questo spazio di lavoro alla registrazione.",
 
+  "settings.tabs.general": "Generale",
+  "settings.tabs.workspace": "Spazio di lavoro",
+  "settings.tabs.team": "Team",
+  "settings.tabs.activity": "Attività",
+  "settings.tabs.advanced": "Avanzate",
+
   "audit.previous": "Precedente",
   "audit.next": "Successivo",
   "audit.action.document.view": "Ha aperto il documento",

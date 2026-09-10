@@ -228,6 +228,12 @@ export const en = {
   "settings.inviteCode": "Invite code",
   "settings.inviteCodeHint": "Share this code with team members so they can join this workspace on sign-up.",
 
+  "settings.tabs.general": "General",
+  "settings.tabs.workspace": "Workspace",
+  "settings.tabs.team": "Team",
+  "settings.tabs.activity": "Activity",
+  "settings.tabs.advanced": "Advanced",
+
   "audit.previous": "Previous",
   "audit.next": "Next",
   "audit.action.document.view": "Opened document",

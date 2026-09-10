@@ -559,10 +559,10 @@ function MembersDialog({
   return (
     <>
       <Dialog open onOpenChange={(open) => !open && onClose()}>
-        <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{t("admin.manageMembersTitle")}</DialogTitle>
-        </DialogHeader>
+        <DialogContent className="sm:max-w-xl">
+          <DialogHeader>
+            <DialogTitle>{t("admin.manageMembersTitle")}</DialogTitle>
+          </DialogHeader>
 
         {error && (
           <Alert variant="destructive">
@@ -572,7 +572,7 @@ function MembersDialog({
 
         <div className="space-y-1.5">
           <Label>{t("admin.addMember")}</Label>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <select
               value={addUserId}
               onChange={(e) => setAddUserId(e.target.value)}
@@ -612,13 +612,13 @@ function MembersDialog({
             {members.map((member) => (
               <li
                 key={member.user_id}
-                className="flex items-center justify-between gap-3 rounded-md border px-3 py-2"
+                className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 rounded-md border px-3 py-2"
               >
                 <div className="min-w-0">
                   <p className="truncate text-sm font-medium">{member.full_name || "—"}</p>
                   <p className="truncate text-xs text-zinc-500">{member.email}</p>
                 </div>
-                <div className="flex shrink-0 items-center gap-2">
+                <div className="flex shrink-0 flex-wrap items-center gap-2">
                   <RoleBadge role={member.role} />
                   {member.role !== "owner" ? (
                     <select
@@ -660,11 +660,11 @@ function MembersDialog({
           </ul>
         )}
 
-<DialogFooter>
-          <Button variant="outline" onClick={onClose}>
-            {t("common.cancel")}
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button variant="outline" onClick={onClose}>
+              {t("common.cancel")}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
 
