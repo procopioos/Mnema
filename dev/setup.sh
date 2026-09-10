@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Mnema dev bootstrap kit.
+# Mnema dev bootstrap kit for macOS.
 #
 # Sets the whole project up from scratch: prerequisites -> fresh source ->
 # env -> Docker images -> containers -> migrations. The app starts EMPTY;
