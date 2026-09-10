@@ -1,4 +1,4 @@
-# Mnema — dev bootstrap kit
+# Mnema — dev bootstrap kit for macOS
 
 A self-contained kit to set the entire Mnema project up from nothing (Docker →
 build → run), create the first administrator, and tear it down — even after
