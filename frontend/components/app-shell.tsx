@@ -1,12 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { ChevronDown, LogOut, Settings, Shield } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
+import { ChevronDown, LogOut, LayoutDashboard, Settings, Shield } from "lucide-react";
 
 import { useAuth } from "@/lib/auth-context";
 import { useLanguage } from "@/lib/i18n";
+import { canAdmin, canManage } from "@/lib/roles";
 import { Button } from "@/components/ui/button";
 import { Sparkles, WavyDivider } from "@/components/doodles";
 import {
@@ -17,7 +18,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { SettingsDialog } from "@/components/settings-dialog";
+import { SettingsDialog, type Tab } from "@/components/settings-dialog";
 
 export function RequireAuth({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -43,11 +44,54 @@ export function RequireAdmin({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function SettingsLauncher() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const { role, user } = useAuth();
+
+  const requested = searchParams.get("settings");
+  const isSystemAdmin = !!user?.is_system_admin;
+  const isAdmin = canAdmin(role);
+  const isManager = canManage(role);
+
+  const valid: Tab[] = ["general", "workspace", "team", "activity", "advanced"];
+  const desired = requested as Tab;
+  const allowed =
+    requested != null &&
+    valid.includes(desired) &&
+    ((desired === "workspace" || desired === "team"
+      ? isAdmin
+      : false) ||
+      (desired === "activity" ? isManager : false) ||
+      (desired === "advanced" ? isSystemAdmin : false) ||
+      desired === "general");
+
+  function onOpenChange(next: boolean) {
+    if (!next && requested) {
+      const params = new URLSearchParams(searchParams.toString());
+      params.delete("settings");
+      const qs = params.toString();
+      router.replace(qs ? `?${qs}` : "/");
+    }
+  }
+
+  return (
+    <SettingsDialog
+      open={allowed}
+      onOpenChange={onOpenChange}
+      initialTab={allowed ? (desired as Tab) : "general"}
+      key={allowed ? (desired as Tab) : "general"}
+    />
+  );
+}
+
 export function AppHeader() {
-  const { user, logout } = useAuth();
+  const { user, role, logout } = useAuth();
   const { t } = useLanguage();
   const router = useRouter();
   const [settingsOpen, setSettingsOpen] = useState(false);
+
+  const showManage = canManage(role) || !!user?.is_system_admin;
 
   function onLogout() {
     logout();
@@ -96,6 +140,12 @@ export function AppHeader() {
                 <Settings />
                 {t("nav.settings")}
               </DropdownMenuItem>
+              {showManage && (
+                <DropdownMenuItem onSelect={() => router.push("/manage")}>
+                  <LayoutDashboard />
+                  {t("nav.manage")}
+                </DropdownMenuItem>
+              )}
               <DropdownMenuSeparator />
               <DropdownMenuItem variant="destructive" className="bg-destructive/10" onSelect={onLogout}>
                 <LogOut />
@@ -106,6 +156,9 @@ export function AppHeader() {
         </div>
       </div>
       <SettingsDialog open={settingsOpen} onOpenChange={setSettingsOpen} />
+      <Suspense fallback={null}>
+        <SettingsLauncher />
+      </Suspense>
     </header>
   );
 }

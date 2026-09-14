@@ -30,7 +30,7 @@ const SELECT_CLASSES =
 
 const ROLES: Role[] = ["owner", "admin", "manager", "employee"];
 
-type Tab = "general" | "workspace" | "team" | "activity" | "advanced";
+export type Tab = "general" | "workspace" | "team" | "activity" | "advanced";
 
 const ALL_TABS: Tab[] = ["general", "workspace", "team", "activity", "advanced"];
 
@@ -45,9 +45,11 @@ const TAB_KEY: Record<Tab, TranslationKey> = {
 export function SettingsDialog({
   open,
   onOpenChange,
+  initialTab,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  initialTab?: Tab;
 }) {
   const router = useRouter();
   const { workspaceId, role, user, logout, refreshWorkspaceMeta } = useAuth();
@@ -68,7 +70,7 @@ export function SettingsDialog({
     return true;
   });
 
-  const [activeTab, setActiveTab] = useState<Tab>("general");
+  const [activeTab, setActiveTab] = useState<Tab>(initialTab ?? "general");
 
   const effectiveTab = visibleTabs.includes(activeTab) ? activeTab : (visibleTabs[0] ?? "general");
 
