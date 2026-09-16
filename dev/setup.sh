@@ -2,7 +2,8 @@
 # Mnema dev bootstrap kit for macOS.
 #
 # Sets the whole project up from scratch: prerequisites -> fresh source ->
-# env -> Docker images -> containers -> migrations. The app starts EMPTY;
+# env -> Docker images -> containers -> migrations -> editor deps. The app
+# starts EMPTY;
 # the first visitor creates the administrator account in the UI or via
 # --seed-demo (demo data, dev only).
 #
@@ -240,6 +241,25 @@ write_env() {
 }
 
 # ---------------------------------------------------------------------------
+# frontend deps (editor + local `npm run dev`; the Docker image builds its own)
+# ---------------------------------------------------------------------------
+install_frontend_deps() {
+  local fdir="${TARGET}/frontend"
+  [ -f "${fdir}/package.json" ] || { warn "no frontend/package.json; skipping editor deps"; return 0; }
+  if [ -d "${fdir}/node_modules" ]; then
+    log "frontend/node_modules present; skipping npm install"
+    return 0
+  fi
+  if ! command -v npm >/dev/null 2>&1; then
+    warn "npm is missing; skipping frontend deps (the editor will show unresolved imports)."
+    warn "Install node (brew install node) then run: cd ${fdir} && npm ci"
+    return 0
+  fi
+  log "Installing frontend dependencies (npm ci) for the editor + local dev"
+  (cd "${fdir}" && npm ci)
+}
+
+# ---------------------------------------------------------------------------
 # stack lifecycle
 # ---------------------------------------------------------------------------
 up_stack() {
@@ -341,6 +361,7 @@ cmd_setup() {
   prepare_target
   write_env
   verify_manifest "${TARGET}"
+  install_frontend_deps
   up_stack
   wait_api || {
     warn "API failed to come up. Diagnostics:"

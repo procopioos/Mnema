@@ -35,7 +35,10 @@ This:
 2. clones `https://github.com/procopioos/Mnema.git` into `~/mnema`,
 3. writes a fresh `~/mnema/.env` (random `SECRET_KEY` + Postgres password),
 4. verifies every file the build needs (see `manifest`),
-5. builds the `api`/`worker`/`web` images and starts the stack (migrations run
+5. installs frontend dependencies (`npm ci`, skipped if `node_modules` exists
+   or `npm` is missing) so editors resolve imports and local `npm run dev`
+   works,
+6. builds the `api`/`worker`/`web` images and starts the stack (migrations run
    on API start).
 
 Open http://localhost:3000 — you land on `/setup` and create the administrator
@@ -137,3 +140,6 @@ checkout but is never called unless `--seed-demo` is passed.
 - **A fresh clone from GitHub is missing recent work**: commits must be pushed
   first. Until then use `--copy` with a local checkout to include uncommitted
   files.
+- **Editor shows red / "cannot find module"**: `frontend/node_modules` is
+  missing (fresh clones exclude it). Re-run `dev/setup.sh setup` (it installs
+  them) or `cd frontend && npm ci` by hand, then reload the editor window.
