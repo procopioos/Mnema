@@ -3,7 +3,7 @@
 #
 # Sets the whole project up from scratch: prerequisites -> fresh source ->
 # env -> Docker images -> containers -> migrations -> editor deps. The app
-# starts EMPTY;
+# starts EMPTY.
 # the first visitor creates the administrator account in the UI or via
 # --seed-demo (demo data, dev only).
 #
@@ -51,6 +51,7 @@ COPY=0
 SEED_DEMO=0
 SKIP_CHECK=0
 FORCE=0
+CREDS_REGENERATED=0
 CMD="setup"
 
 log()  { printf '\033[1;34m==> %s\033[0m\n' "$*"; }
@@ -88,6 +89,11 @@ done
 
 if [ "${NO_CLONE}" -eq 1 ] && [ "${COPY}" -eq 1 ]; then
   die "--no-clone and --copy are mutually exclusive"
+fi
+
+if [ "${NO_CLONE}" -eq 0 ] && [ -f "${REPO_ROOT}/docker-compose.yml" ] && [ -d "${REPO_ROOT}/backend" ]; then
+  NO_CLONE=1
+  log "Detected existing checkout at ${REPO_ROOT}; operating in place (--no-clone)"
 fi
 
 # ---------------------------------------------------------------------------
@@ -238,6 +244,7 @@ write_env() {
       -e "s/__POSTGRES_PASSWORD__/${dbpass}/g" \
       "${ENV_TEMPLATE}" > "${envfile}"
   chmod 600 "${envfile}"
+  CREDS_REGENERATED=1
 }
 
 # ---------------------------------------------------------------------------
@@ -356,11 +363,45 @@ EOF
 # ---------------------------------------------------------------------------
 # commands
 # ---------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
+# credential/volume consistency: a fresh password + a reused data volume is a
+# stack that can never start (the old password is unrecoverable once the .env
+# is gone). Fail fast or wipe -- never build broken.
+# ---------------------------------------------------------------------------
+ensure_db_consistency() {
+  [ "${CREDS_REGENERATED:-0}" -eq 1 ] || return 0
+  local vol="${PROJECT}_postgres_data"
+  docker volume inspect "${vol}" >/dev/null 2>&1 || return 0
+  if [ "${FORCE}" -eq 1 ]; then
+    warn "Fresh credentials + existing volume ${vol}: wiping project volumes (--force = fresh start, DATA WILL BE LOST)"
+    docker compose --project-directory "${TARGET}" -f "${TARGET}/docker-compose.yml" down -v
+    return 0
+  fi
+  die "Volume ${vol} already exists but ${TARGET}/.env was (re)generated, so the volume's password is unrecoverable. Run 'dev/setup.sh destroy' or re-run with --force to start fresh (DATA WILL BE LOST)."
+}
+
+# Warn when another checkout's containers share this project name (same
+# sanitized basename, e.g. ~/mnema vs .../Desktop/Mnema) -- they share volumes.
+warn_project_collision() {
+  local cid wdir cname
+  for cid in $(docker ps -q --filter "label=com.docker.compose.project=${PROJECT}" 2>/dev/null); do
+    wdir="$(docker inspect "${cid}" --format '{{index .Config.Labels "com.docker.compose.project.working_dir"}}' 2>/dev/null || true)"
+    if [ -n "${wdir}" ] && [ "${wdir}" != "${TARGET}" ]; then
+      cname="$(docker inspect "${cid}" --format '{{.Name}}' 2>/dev/null | sed 's#^/##')"
+      warn "Container ${cname} belongs to project '${PROJECT}' but runs from ${wdir}, not ${TARGET}."
+      warn "Two checkouts share one project name and its volumes; stop the other stack first."
+      return 0
+    fi
+  done
+}
+
 cmd_setup() {
   if [ "${SKIP_CHECK}" -eq 0 ]; then doctor; fi
   prepare_target
   write_env
   verify_manifest "${TARGET}"
+  ensure_db_consistency
+  warn_project_collision
   install_frontend_deps
   up_stack
   wait_api || {

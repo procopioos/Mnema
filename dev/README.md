@@ -143,3 +143,12 @@ checkout but is never called unless `--seed-demo` is passed.
 - **Editor shows red / "cannot find module"**: `frontend/node_modules` is
   missing (fresh clones exclude it). Re-run `dev/setup.sh setup` (it installs
   them) or `cd frontend && npm ci` by hand, then reload the editor window.
+- **API/worker crash-loop with `password authentication failed for user
+  "mnema"`**: the `.env` password doesn't match the reused Postgres volume
+  (fresh credentials + old data). Re-run `setup`: it now wipes the project
+  volumes under `--force`, or aborts with instructions when the password is
+  unrecoverable.
+- **Two checkouts, one project name** (e.g. `~/mnema` vs `.../Desktop/Mnema`
+  both sanitize to `mnema`): they share containers and volumes. `setup` warns
+  when another checkout's containers are running — stop that stack first, or
+  pass a distinct `--project`.
