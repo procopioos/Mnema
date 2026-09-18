@@ -96,6 +96,11 @@ export const it: { [K in TranslationKey]: string } = {
   "manage.account.title": "Account",
   "manage.account.profile": "Profilo e lingua",
   "manage.account.profileDesc": "Modifica nome, lingua e impostazioni di visualizzazione.",
+  "activity.title": "Registro attività",
+  "activity.description": "Registro dettagliato delle azioni nel tuo spazio di lavoro.",
+  "activity.systemDescription": "Registro dettagliato di tutte le azioni a livello di istanza.",
+  "activity.viewFullLog": "Visualizza registro completo",
+  "activity.openLogDesc": "Il registro attività completo si trova in una pagina dedicata.",
 
   "login.welcomeBack": "Bentornato",
   "login.description": "Accedi al tuo spazio Mnema.",

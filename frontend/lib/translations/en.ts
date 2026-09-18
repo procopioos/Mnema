@@ -94,6 +94,11 @@ export const en = {
   "manage.account.title": "Account",
   "manage.account.profile": "Profile & language",
   "manage.account.profileDesc": "Change your name, language, and display settings.",
+  "activity.title": "Activity log",
+  "activity.description": "Detailed log of actions in your workspace.",
+  "activity.systemDescription": "Detailed log of all instance-wide actions.",
+  "activity.viewFullLog": "View full log",
+  "activity.openLogDesc": "The full activity log lives on its own page.",
 
   "login.welcomeBack": "Welcome back",
   "login.description": "Sign in to your Mnema workspace.",

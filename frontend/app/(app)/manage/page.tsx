@@ -91,7 +91,7 @@ export default function ManagePage() {
       icon: <Activity className="size-4" />,
       labelKey: "manage.activity.log",
       descKey: "manage.activity.logDesc",
-      onClick: () => openSettings("activity"),
+      onClick: () => router.push("/activity"),
     });
   }
 
@@ -120,7 +120,7 @@ export default function ManagePage() {
         icon: <Shield className="size-4" />,
         labelKey: "manage.admin.systemActivity",
         descKey: "manage.admin.systemActivityDesc",
-        onClick: () => router.push("/admin?tab=activity"),
+        onClick: () => router.push("/activity"),
       }
     );
   }

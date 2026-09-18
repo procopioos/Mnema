@@ -11,7 +11,6 @@ import { useLanguage, LANGUAGES } from "@/lib/i18n";
 import type { TranslationKey } from "@/lib/translations/en";
 import { canAdmin, canManage, ROLE_LABEL_KEY } from "@/lib/roles";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { AuditView } from "@/components/audit-view";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -382,8 +381,16 @@ export function SettingsDialog({
                   <Activity className="h-4 w-4 text-zinc-500" />
                   {t("settings.activity")}
                 </div>
-                <p className="text-sm text-zinc-500">{t("settings.activityDescription")}</p>
-                <AuditView workspaceId={workspaceId} />
+                <p className="text-sm text-zinc-500">{t("activity.openLogDesc")}</p>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    onOpenChange(false);
+                    router.push("/activity");
+                  }}
+                >
+                  {t("activity.viewFullLog")}
+                </Button>
               </div>
             )}
 
